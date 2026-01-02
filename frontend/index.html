@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Entregas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gestión de Entregas</h1>
+            <button id="add-delivery-btn" class="button primary">Agregar Entrega</button>
+        </header>
+        <main id="deliveries-grid" class="deliveries-grid"></main>
+    </div>
+
+    <div id="modal-backdrop" class="modal-backdrop hidden"></div>
+    <div id="delivery-modal" class="modal hidden">
+        <div class="modal-header">
+            <h2 id="modal-title">Agregar Nueva Entrega</h2>
+            <button id="close-modal-btn" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="delivery-form">
+                <input type="hidden" id="delivery-id">
+                <div class="form-group">
+                    <label for="order-id">ID de Orden</label>
+                    <input type="number" id="order-id" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Dirección de Entrega</label>
+                    <input type="text" id="address" required>
+                </div>
+                 <div class="form-group">
+                    <label for="tracking-number">Número de Seguimiento</label>
+                    <input type="text" id="tracking-number">
+                </div>
+                <div class="form-group">
+                    <label for="status">Estado</label>
+                    <select id="status">
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="ENVIADO">Enviado</option>
+                        <option value="ENTREGADO">Entregado</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
