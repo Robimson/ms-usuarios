@@ -33,4 +33,7 @@ public class Entrega {
     private Estado status;
 
     private String trackingNumber;
+
+    @Column(length = 100)
+    private String email;
 }

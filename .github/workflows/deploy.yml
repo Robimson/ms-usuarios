@@ -1,0 +1,73 @@
+name: CI/CD Despliegue Automático
+
+on:
+  push:
+    branches: [ "master" ] # Se activa al subir cambios a master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Login en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir y Subir imagen a Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ms-usuarios:latest
+
+  deploy-to-azure:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ejecutar comandos en Azure vía SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AZURE_IP }}
+          username: azureuser  # <-- Revisa si este es tu usuario de Azure
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            mkdir -p ~/app
+            cd ~/app
+            # Creamos el docker-compose en el servidor
+            cat <<EOF > docker-compose.yml
+            version: '3.8'
+            services:
+              ms-usuarios-db:
+                image: postgres:15-alpine
+                container_name: ms-usuarios-db
+                environment:
+                  POSTGRES_DB: microservicio_db
+                  POSTGRES_USER: msdb
+                  POSTGRES_PASSWORD: holamundo123
+                ports:
+                  - "5433:5432"
+                networks:
+                  - ms-network
+              ms-usuarios-app:
+                image: ${{ secrets.DOCKER_USERNAME }}/ms-usuarios:latest
+                container_name: ms-usuarios-app
+                depends_on:
+                  - ms-usuarios-db
+                environment:
+                  SPRING_DATASOURCE_URL: jdbc:postgresql://ms-usuarios-db:5432/microservicio_db
+                  SPRING_DATASOURCE_USERNAME: msdb
+                  SPRING_DATASOURCE_PASSWORD: holamundo123
+                ports:
+                  - "8089:8089"
+                networks:
+                  - ms-network
+            networks:
+              ms-network:
+                driver: bridge
+            EOF
+            sudo docker-compose pull
+            sudo docker-compose up -d
