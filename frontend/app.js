@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const apiUrl = 'http://localhost:8092/api/entregas';
+const apiUrl = '/api/entregas';
     let allDeliveries = [];
 
     const STATUS_MAP = {
