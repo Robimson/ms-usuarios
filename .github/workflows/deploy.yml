@@ -70,5 +70,6 @@ jobs:
                 driver: bridge
             EOF
             # Usamos el comando moderno con espacio
+            sudo docker compose down --remove-orphans
             sudo docker compose pull
             sudo docker compose up -d
