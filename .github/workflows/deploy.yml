@@ -61,6 +61,7 @@ jobs:
                   SPRING_DATASOURCE_URL: jdbc:postgresql://ms-usuarios-db:5432/microservicio_db
                   SPRING_DATASOURCE_USERNAME: msdb
                   SPRING_DATASOURCE_PASSWORD: holamundo123
+                  SPRING_JPA_HIBERNATE_DDL_AUTO: update
                 ports:
                   - "8092:8092"
                 networks:
