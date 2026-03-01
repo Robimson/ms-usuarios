@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Servicio de Base de Datos
+  ms-usuarios-db:
+    image: postgres:15-alpine
+    container_name: ms-usuarios-db
+    environment:
+      POSTGRES_DB: microservicio_db
+      POSTGRES_USER: msdb
+      POSTGRES_PASSWORD: holamundo123
+    ports:
+      - "5433:5432" # Mapeamos al puerto 5433 en tu PC para no chocar con tu Postgres local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ms-network
+
+  # Servicio de Aplicación (Tu Microservicio)
+  ms-usuarios-app:
+    build: .
+    container_name: ms-usuarios-app
+    depends_on:
+      - ms-usuarios-db
+    environment:
+      # Sobrescribimos la configuración de application.properties
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ms-usuarios-db:5432/microservicio_db
+      SPRING_DATASOURCE_USERNAME: msdb
+      SPRING_DATASOURCE_PASSWORD: holamundo123
+      # Variable para conectar con el microservicio de notificaciones en el host
+      NOTIFICACIONES_URL: http://host.docker.internal:8090/api/notificaciones/enviar
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Necesario para que funcione en Linux/Azure
+    ports:
+      - "8089:8089"
+    networks:
+      - ms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  ms-network:
+    driver: bridge
