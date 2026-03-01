@@ -18,12 +18,22 @@ spec:
           ports:
             - containerPort: 8092
           env:
+            
             - name: SPRING_DATASOURCE_URL
               value: jdbc:postgresql://ms-usuarios-db:5432/microservicio_db
             - name: SPRING_DATASOURCE_USERNAME
               value: msdb
             - name: SPRING_DATASOURCE_PASSWORD
               value: holamundo123
+
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              value: org.hibernate.dialect.PostgreSQLDialect
+            - name: SPRING_JPA_SHOW_SQL
+              value: "true"
+
+
             - name: NOTIFICACIONES_URL
               value: http://host.docker.internal:8090/api/notificaciones/enviar
 ---
