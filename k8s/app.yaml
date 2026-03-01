@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: ms-usuarios
-          image: ${DOCKER_IMAGE} # Esto lo llena GitHub automáticamente
+          image: ${DOCKER_IMAGE}
           ports:
             - containerPort: 8092
           env:
@@ -24,13 +24,15 @@ spec:
               value: msdb
             - name: SPRING_DATASOURCE_PASSWORD
               value: holamundo123
+            - name: NOTIFICACIONES_URL
+              value: http://host.docker.internal:8090/api/notificaciones/enviar
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: ms-usuarios-service
 spec:
-  type: LoadBalancer # Esto te dará la IP pública para entrar desde el navegador
+  type: LoadBalancer
   selector:
     app: ms-usuarios-app
   ports:

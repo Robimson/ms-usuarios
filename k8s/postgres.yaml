@@ -3,8 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: postgres-pv-claim
 spec:
-  accessModes:
-    - ReadWriteOnce
+  accessModes: [ReadWriteOnce]
   resources:
     requests:
       storage: 1Gi
@@ -29,6 +28,8 @@ spec:
           ports:
             - containerPort: 5432
           env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata # <--- ESTO ARREGLA TU ERROR
             - name: POSTGRES_DB
               value: microservicio_db
             - name: POSTGRES_USER
