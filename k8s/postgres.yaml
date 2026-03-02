@@ -29,7 +29,7 @@ spec:
             - containerPort: 5432
           env:
             - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata # <--- ESTO ARREGLA TU ERROR
+              value: /var/lib/postgresql/data/pgdata
             - name: POSTGRES_DB
               value: microservicio_db
             - name: POSTGRES_USER

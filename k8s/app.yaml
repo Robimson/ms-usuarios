@@ -18,7 +18,7 @@ spec:
           ports:
             - containerPort: 8092
           env:
-            
+
             - name: SPRING_DATASOURCE_URL
               value: jdbc:postgresql://ms-usuarios-db:5432/microservicio_db
             - name: SPRING_DATASOURCE_USERNAME
