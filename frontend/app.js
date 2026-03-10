@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
-    // UI Elements
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -21,9 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
 
-
-    const clienteExternoSelect = document.getElementById('cliente-externo');
-
+    const cedulaBuscarInput = document.getElementById('cedula-buscar');
+    const btnVerificarCliente = document.getElementById('btn-verificar-cliente');
 
     const showToast = (message, type = 'success') => {
         const container = document.getElementById('toast-container');
@@ -37,40 +35,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
+    const verificarCliente = async () => {
+        const cedula = cedulaBuscarInput.value.trim();
 
-    const fetchClientesExternos = async () => {
+        if (!cedula) {
+            showToast('Por favor, ingrese una cédula', 'error');
+            return;
+        }
+
         try {
-            const response = await fetch(apiClientesExternosUrl);
-            const clientes = await response.json();
+            btnVerificarCliente.textContent = 'Buscando...';
+            btnVerificarCliente.disabled = true;
 
-            if (clienteExternoSelect) {
-                clienteExternoSelect.innerHTML = '<option value="">-- Seleccione un cliente para auto-completar --</option>';
-                clientes.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = c.id;
+            const response = await fetch(`${apiClientesExternosUrl}/${cedula}`);
 
-                    option.dataset.direccion = c.direccion || '';
-                    option.dataset.email = c.correo || '';
-                    option.textContent = `${c.nombre} ${c.apellido} (${c.cedula})`;
-                    clienteExternoSelect.appendChild(option);
-                });
+            if (response.ok) {
+                const cliente = await response.json();
+                document.getElementById('address').value = cliente.direccion || '';
+                document.getElementById('email').value = cliente.correo || '';
+                showToast(`Cliente encontrado: ${cliente.nombre} ${cliente.apellido}`);
+            } else {
+                showToast('Cliente no encontrado en el sistema externo', 'error');
             }
         } catch (e) {
-            console.error("Error al cargar clientes externos:", e);
+            showToast('Error al conectar con el servicio de búsqueda', 'error');
+            console.error(e);
+        } finally {
+            btnVerificarCliente.textContent = 'Verificar';
+            btnVerificarCliente.disabled = false;
         }
     };
 
-
-    if (clienteExternoSelect) {
-        clienteExternoSelect.onchange = (e) => {
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            if (selectedOption && selectedOption.value !== "") {
-                document.getElementById('address').value = selectedOption.dataset.direccion;
-                document.getElementById('email').value = selectedOption.dataset.email;
-                showToast(`Datos de ${selectedOption.textContent} cargados`);
-            }
-        };
+    if (btnVerificarCliente) {
+        btnVerificarCliente.onclick = verificarCliente;
     }
+
+    cedulaBuscarInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            verificarCliente();
+        }
+    };
 
     const sortDeliveries = (list) => {
         return list.sort((a, b) => {
@@ -138,16 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchStats();
             } else {
                 const errorData = await response.json();
-                const mensajeLimpio = errorData.message || 'Error desconocido al guardar';
-                showToast(mensajeLimpio, 'error');
+                showToast(errorData.message || 'Error al guardar', 'error');
             }
-        } catch (e) {
-            showToast('Error crítico de red o servidor', 'error');
-        }
+        } catch (e) { showToast('Error crítico de red', 'error'); }
     };
 
     const deleteDelivery = async (id) => {
-        if (!confirm('¿Eliminar esta entrega permanentemente?')) return;
+        if (!confirm('¿Eliminar esta entrega?')) return;
         try {
             const response = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
             if (response.ok) {
@@ -161,12 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderDeliveries = (deliveries) => {
         deliveriesGrid.innerHTML = '';
         const sorted = sortDeliveries([...deliveries]);
-
         if (sorted.length === 0) {
-            deliveriesGrid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#999; margin-top:20px;">No hay resultados.</p>';
+            deliveriesGrid.innerHTML = '<p style="text-align:center; color:#999;">No hay resultados.</p>';
             return;
         }
-
         sorted.forEach(d => {
             const config = STATUS_MAP[d.status];
             const card = document.createElement('div');
@@ -203,8 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Destino:</strong> ${d.address}</p>
             </div>
             <div class="timeline">
-                <div class="timeline-item"><h4>Orden Registrada</h4><p>ID de Orden #${d.orderId} validado en sistema.</p></div>
-                <div class="timeline-item"><h4>Estado Actual: ${d.status}</h4><p>Notificación enviada al correo del cliente.</p></div>
+                <div class="timeline-item"><h4>Orden Registrada</h4><p>Datos validados en sistema.</p></div>
+                <div class="timeline-item"><h4>Estado: ${d.status}</h4><p>Notificación enviada.</p></div>
             </div>
         `;
         drawer.classList.remove('hidden');
@@ -214,10 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.stat-card').forEach(card => {
         card.onclick = () => {
             const statusKey = card.id.split('-')[1].toUpperCase();
-            const filtered = allDeliveries.filter(d => d.status === statusKey);
-            renderDeliveries(filtered);
+            renderDeliveries(allDeliveries.filter(d => d.status === statusKey));
             resetSearchBtn.style.display = 'inline-block';
-            showToast(`Filtrando: ${statusKey}`);
         };
     });
 
@@ -231,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('status').value = d.status;
 
 
-        if (clienteExternoSelect) clienteExternoSelect.parentElement.style.display = 'none';
+        if (cedulaBuscarInput) cedulaBuscarInput.parentElement.parentElement.style.display = 'none';
 
         modal.classList.remove('hidden');
         backdrop.classList.remove('hidden');
@@ -249,9 +247,10 @@ document.addEventListener('DOMContentLoaded', () => {
         deliveryForm.reset();
         document.getElementById('delivery-id').value = '';
 
-        if (clienteExternoSelect) {
-            clienteExternoSelect.parentElement.style.display = 'block';
-            fetchClientesExternos();
+        // Mostrar buscador al agregar nueva entrega
+        if (cedulaBuscarInput) {
+            cedulaBuscarInput.parentElement.parentElement.style.display = 'block';
+            cedulaBuscarInput.value = '';
         }
 
         modal.classList.remove('hidden');
