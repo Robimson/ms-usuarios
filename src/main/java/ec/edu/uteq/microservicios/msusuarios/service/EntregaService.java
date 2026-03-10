@@ -15,5 +15,5 @@ public interface EntregaService {
     Optional<Entrega> buscarPorTracking(String trackingNumber);
     Map<String, Long> obtenerEstadisticas();
     List<ClienteExternoDto> listarClientesDelOtroGrupo();
-
+    ClienteExternoDto buscarClienteExternoPorCedula(String cedula);
 }

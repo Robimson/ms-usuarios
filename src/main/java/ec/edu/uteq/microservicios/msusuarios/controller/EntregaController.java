@@ -36,6 +36,16 @@ public class EntregaController implements EntregasApi {
         return ResponseEntity.ok(clientes);
     }
 
+    @GetMapping("/api/clientes-externos/{cedula}")
+    public ResponseEntity<ClienteExternoDto> obtenerClientePorCedula(@PathVariable String cedula) {
+        ClienteExternoDto cliente = service.buscarClienteExternoPorCedula(cedula);
+        if (cliente != null) {
+            return ResponseEntity.ok(cliente);
+        } else {
+            return ResponseEntity.notFound().build(); // Devuelve 404 si no existe
+        }
+    }
+
     @Override
     public ResponseEntity<List<EntregaDto>> listarEntregas() {
         List<EntregaDto> dtos = service.listar()

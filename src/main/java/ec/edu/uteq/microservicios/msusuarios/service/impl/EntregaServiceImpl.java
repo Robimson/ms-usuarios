@@ -46,6 +46,16 @@ public class EntregaServiceImpl implements EntregaService {
     }
 
     @Override
+    public ClienteExternoDto buscarClienteExternoPorCedula(String cedula) {
+        List<ClienteExternoDto> todos = listarClientesDelOtroGrupo();
+
+        return todos.stream()
+                .filter(c -> c.getCedula() != null && c.getCedula().equals(cedula))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
     public Entrega crear(Entrega entrega) {
         if (entrega == null) throw new RuntimeException("Datos nulos");
 
