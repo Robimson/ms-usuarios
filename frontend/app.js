@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const apiUrl = 'http://130.107.144.11:8092/api/entregas';
+    const apiClientesExternosUrl = 'http://130.107.144.11:8092/api/clientes-externos';
+
     let allDeliveries = [];
 
     const STATUS_MAP = {
@@ -19,7 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
 
-    // --- NOTIFICACIONES TOAST ---
+
+    const clienteExternoSelect = document.getElementById('cliente-externo');
+
+
     const showToast = (message, type = 'success') => {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -31,6 +36,41 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => toast.remove(), 500);
         }, 5000);
     };
+
+
+    const fetchClientesExternos = async () => {
+        try {
+            const response = await fetch(apiClientesExternosUrl);
+            const clientes = await response.json();
+
+            if (clienteExternoSelect) {
+                clienteExternoSelect.innerHTML = '<option value="">-- Seleccione un cliente para auto-completar --</option>';
+                clientes.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+
+                    option.dataset.direccion = c.direccion || '';
+                    option.dataset.email = c.correo || '';
+                    option.textContent = `${c.nombre} ${c.apellido} (${c.cedula})`;
+                    clienteExternoSelect.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.error("Error al cargar clientes externos:", e);
+        }
+    };
+
+
+    if (clienteExternoSelect) {
+        clienteExternoSelect.onchange = (e) => {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            if (selectedOption && selectedOption.value !== "") {
+                document.getElementById('address').value = selectedOption.dataset.direccion;
+                document.getElementById('email').value = selectedOption.dataset.email;
+                showToast(`Datos de ${selectedOption.textContent} cargados`);
+            }
+        };
+    }
 
     const sortDeliveries = (list) => {
         return list.sort((a, b) => {
@@ -60,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchInput.oninput = performSearch;
 
-    // --- API FUNCTIONS ---
     const fetchStats = async () => {
         try {
             const response = await fetch(`${apiUrl}/estadisticas`);
@@ -98,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchDeliveries();
                 fetchStats();
             } else {
-                // AQUÍ ESTÁ EL CAMBIO: Leemos el JSON de error que manda Java
                 const errorData = await response.json();
                 const mensajeLimpio = errorData.message || 'Error desconocido al guardar';
                 showToast(mensajeLimpio, 'error');
@@ -191,6 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('email').value = d.email || '';
         document.getElementById('tracking-number').value = d.trackingNumber || '';
         document.getElementById('status').value = d.status;
+
+
+        if (clienteExternoSelect) clienteExternoSelect.parentElement.style.display = 'none';
+
         modal.classList.remove('hidden');
         backdrop.classList.remove('hidden');
     };
@@ -206,6 +248,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-title').textContent = 'Agregar Entrega';
         deliveryForm.reset();
         document.getElementById('delivery-id').value = '';
+
+        if (clienteExternoSelect) {
+            clienteExternoSelect.parentElement.style.display = 'block';
+            fetchClientesExternos();
+        }
+
         modal.classList.remove('hidden');
         backdrop.classList.remove('hidden');
     };

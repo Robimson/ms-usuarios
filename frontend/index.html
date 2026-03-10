@@ -55,6 +55,15 @@
     <div class="modal-body">
         <form id="delivery-form">
             <input type="hidden" id="delivery-id">
+
+            <div class="form-group">
+                <label for="cliente-externo">Seleccionar Cliente Existente (Microservicio Externo)</label>
+                <select id="cliente-externo" class="form-control">
+                    <option value="">-- Seleccione un cliente para auto-completar --</option>
+                </select>
+            </div>
+            <hr>
+
             <div class="form-group">
                 <label for="order-id">ID de Orden</label>
                 <input type="number" id="order-id" required>
@@ -94,7 +103,6 @@
         <button id="close-drawer-btn" class="close-btn">&times;</button>
     </div>
     <div id="drawer-content" class="drawer-body">
-        <!-- Se llena con JS -->
     </div>
 </div>
 
