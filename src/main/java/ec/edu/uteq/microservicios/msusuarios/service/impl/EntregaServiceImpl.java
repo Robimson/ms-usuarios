@@ -1,11 +1,15 @@
 package ec.edu.uteq.microservicios.msusuarios.service.impl;
 
 import ec.edu.uteq.microservicios.msusuarios.model.Entrega;
+import ec.edu.uteq.microservicios.msusuarios.model.ClienteExternoDto;
 import ec.edu.uteq.microservicios.msusuarios.repository.EntregaRepository;
 import ec.edu.uteq.microservicios.msusuarios.service.EntregaService;
 import ec.edu.uteq.microservicios.msusuarios.service.EmailService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,10 +20,12 @@ public class EntregaServiceImpl implements EntregaService {
 
     private final EntregaRepository repo;
     private final EmailService emailService;
+    private final RestTemplate restTemplate;
 
-    public EntregaServiceImpl(EntregaRepository repo, EmailService emailService) {
+    public EntregaServiceImpl(EntregaRepository repo, EmailService emailService, RestTemplate restTemplate) {
         this.repo = repo;
         this.emailService = emailService;
+        this.restTemplate = restTemplate;
     }
 
     @Override
@@ -28,10 +34,21 @@ public class EntregaServiceImpl implements EntregaService {
     }
 
     @Override
+    public List<ClienteExternoDto> listarClientesDelOtroGrupo() {
+        String url = "http://4.206.202.17:8081/api/clientes";
+        try {
+            ClienteExternoDto[] response = restTemplate.getForObject(url, ClienteExternoDto[].class);
+            return response != null ? Arrays.asList(response) : Collections.emptyList();
+        } catch (Exception e) {
+            System.err.println("Error al conectar con el micro de clientes: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public Entrega crear(Entrega entrega) {
         if (entrega == null) throw new RuntimeException("Datos nulos");
 
-        // VALIDACIÓN: Evitar ID de Orden duplicado
         if (repo.existsByOrderId(entrega.getOrderId())) {
             throw new RuntimeException("Error: Ya existe una entrega con la Orden #" + entrega.getOrderId());
         }

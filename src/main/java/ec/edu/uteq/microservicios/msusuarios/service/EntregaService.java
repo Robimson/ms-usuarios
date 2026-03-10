@@ -1,5 +1,6 @@
 package ec.edu.uteq.microservicios.msusuarios.service;
 
+import ec.edu.uteq.microservicios.msusuarios.model.ClienteExternoDto;
 import ec.edu.uteq.microservicios.msusuarios.model.Entrega;
 //import org.springframework.lang.NonNull;
 import java.util.List;
@@ -13,4 +14,6 @@ public interface EntregaService {
     void eliminar(Long id);
     Optional<Entrega> buscarPorTracking(String trackingNumber);
     Map<String, Long> obtenerEstadisticas();
+    List<ClienteExternoDto> listarClientesDelOtroGrupo();
+
 }
