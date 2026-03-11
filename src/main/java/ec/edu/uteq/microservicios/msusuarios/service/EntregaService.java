@@ -18,5 +18,6 @@ public interface EntregaService {
     List<ClienteExternoDto> listarClientesDelOtroGrupo();
     ClienteExternoDto buscarClienteExternoPorCedula(String cedula);
     FacturaExternoDto buscarFacturaExternaPorId(Long id);
+    FacturaExternoDto buscarUltimaFacturaPorDni(String dni);
 
 }

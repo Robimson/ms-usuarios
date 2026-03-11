@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+
     const apiUrl = 'http://130.107.144.11:8092/api/entregas';
     const apiClientesExternosUrl = 'http://130.107.144.11:8092/api/clientes-externos';
     const apiFacturasExternasUrl = 'http://130.107.144.11:8092/api/facturas-externas';
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
+
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -20,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const drawerBackdrop = document.getElementById('drawer-backdrop');
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
+
 
     const orderIdInput = document.getElementById('order-id');
     const cedulaBuscarInput = document.getElementById('cedula-buscar');
@@ -38,6 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
+    const rellenarCampos = (nombre, dni, email, direccion, telefono = '') => {
+        document.getElementById('client-name').value = nombre || '';
+        document.getElementById('client-cedula').value = dni || '';
+        document.getElementById('email').value = email || '';
+        document.getElementById('address').value = direccion || '';
+        document.getElementById('phone').value = telefono || '';
+    };
+
 
     const verificarDatosMaestro = async () => {
         const orderId = orderIdInput.value.trim();
@@ -51,46 +62,65 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             btnVerificarMaestro.textContent = 'Buscando...';
             btnVerificarMaestro.disabled = true;
+            let encontrado = false;
+
 
             if (orderId) {
-                const responseFactura = await fetch(`${apiFacturasExternasUrl}/${orderId}`);
-                if (responseFactura.ok) {
-                    const factura = await responseFactura.json();
-
-
-                    document.getElementById('client-name').value = factura.cliente.nombre;
-                    document.getElementById('client-cedula').value = factura.cliente.dni;
-                    document.getElementById('email').value = factura.cliente.email || '';
-                    document.getElementById('address').value = factura.cliente.direccion || '';
-                    document.getElementById('phone').value = '';
-
+                const response = await fetch(`${apiFacturasExternasUrl}/${orderId}`);
+                if (response.ok) {
+                    const factura = await response.json();
+                    rellenarCampos(
+                        factura.cliente.nombre,
+                        factura.cliente.dni,
+                        factura.cliente.email,
+                        factura.cliente.direccion
+                    );
                     showToast(`Datos de Factura #${orderId} cargados correctamente`);
-                    return;
+                    encontrado = true;
                 } else if (!cedula) {
-                    showToast('Factura no encontrada', 'error');
+                    showToast('No se encontró la factura con ese ID', 'error');
                 }
             }
 
-            if (cedula) {
-                const responseCliente = await fetch(`${apiClientesExternosUrl}/${cedula}`);
-                if (responseCliente.ok) {
-                    const cliente = await responseCliente.json();
-
-                    document.getElementById('client-name').value = `${cliente.nombre} ${cliente.apellido}`;
-                    document.getElementById('client-cedula').value = cliente.cedula;
-                    document.getElementById('phone').value = cliente.telefono || '';
-                    document.getElementById('email').value = cliente.correo || '';
-                    document.getElementById('address').value = cliente.direccion || '';
-
-                    showToast(`Datos de cliente por cédula cargados correctamente`);
-                } else {
-                    showToast('No se encontró información ni por Factura ni por Cédula', 'error');
+            if (!encontrado && cedula) {
+                const response = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`);
+                if (response.ok) {
+                    const factura = await response.json();
+                    rellenarCampos(
+                        factura.cliente.nombre,
+                        factura.cliente.dni,
+                        factura.cliente.email,
+                        factura.cliente.direccion
+                    );
+                    showToast(`Dirección recuperada de la última factura del cliente`);
+                    encontrado = true;
                 }
             }
+
+            if (!encontrado && cedula) {
+                const response = await fetch(`${apiClientesExternosUrl}/${cedula}`);
+                if (response.ok) {
+                    const cliente = await response.json();
+                    rellenarCampos(
+                        `${cliente.nombre} ${cliente.apellido}`,
+                        cliente.cedula,
+                        cliente.correo,
+                        cliente.direccion,
+                        cliente.telefono
+                    );
+                    showToast(`Datos personales cargados desde Micro de Clientes`);
+                    encontrado = true;
+                }
+            }
+
+            if (!encontrado) {
+                showToast('No se encontró información en ningún sistema externo', 'error');
+            }
+
         } catch (e) {
-            showToast('Error al conectar con los servicios externos', 'error');
+            showToast('Error de conexión con los servidores externos', 'error');
         } finally {
-            btnVerificarMaestro.textContent = 'Verificar y Autocompletar';
+            btnVerificarMaestro.textContent = 'Verificar';
             btnVerificarMaestro.disabled = false;
         }
     };
@@ -98,6 +128,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnVerificarMaestro) {
         btnVerificarMaestro.onclick = verificarDatosMaestro;
     }
+
+    [orderIdInput, cedulaBuscarInput].forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                verificarDatosMaestro();
+            }
+        });
+    });
+
 
 
     const fetchStats = async () => {
@@ -208,8 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Destino:</strong> ${d.address}</p>
             </div>
             <div class="timeline">
-                <div class="timeline-item"><h4>Registro</h4><p>Datos validados e integrados con microservicios externos.</p></div>
-                <div class="timeline-item"><h4>Estado Actual: ${d.status}</h4><p>Notificación enviada al correo: ${d.email || 'N/A'}</p></div>
+                <div class="timeline-item"><h4>Registro</h4><p>Datos validados e integrados con micros externos.</p></div>
+                <div class="timeline-item"><h4>Estado Actual: ${d.status}</h4><p>Notificación enviada a: ${d.email || 'N/A'}</p></div>
             </div>
         `;
         drawer.classList.remove('hidden');
@@ -240,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
         drawer.classList.add('hidden');
         drawerBackdrop.classList.add('hidden');
     };
-
 
     document.getElementById('add-delivery-btn').onclick = () => {
         document.getElementById('modal-title').textContent = 'Agregar Nueva Entrega';

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -58,14 +59,39 @@ public class EntregaServiceImpl implements EntregaService {
 
     @Override
     public FacturaExternoDto buscarFacturaExternaPorId(Long id) {
-        String url = "http://74.249.40.210:8080/api/facturas/" + id;
-
+        String url = "http://74.249.40.210:8080/api/facturas";
         try {
-            return restTemplate.getForObject(url, FacturaExternoDto.class);
+            FacturaExternoDto[] facturas = restTemplate.getForObject(url, FacturaExternoDto[].class);
+
+            if (facturas != null) {
+                return Arrays.stream(facturas)
+                        .filter(f -> f.getId().equals(id))
+                        .findFirst()
+                        .orElse(null);
+            }
         } catch (Exception e) {
-            System.err.println("Error al conectar con el micro de facturación (ID: " + id + "): " + e.getMessage());
-            return null;
+            System.err.println("Error al conectar con facturación: " + e.getMessage());
         }
+        return null;
+    }
+
+
+    public FacturaExternoDto buscarUltimaFacturaPorDni(String dni) {
+        String url = "http://74.249.40.210:8080/api/facturas";
+        try {
+            FacturaExternoDto[] facturas = restTemplate.getForObject(url, FacturaExternoDto[].class);
+            if (facturas != null) {
+                return Arrays.stream(facturas)
+                        .filter(f -> f.getCliente() != null && dni.equals(f.getCliente().getDni()))
+
+                        .sorted((f1, f2) -> f2.getId().compareTo(f1.getId()))
+                        .findFirst()
+                        .orElse(null);
+            }
+        } catch (Exception e) {
+            System.err.println("Error buscando DNI en facturas: " + e.getMessage());
+        }
+        return null;
     }
 
     @Override

@@ -48,15 +48,21 @@ public class EntregaController implements EntregasApi {
     }
 
     @GetMapping("/api/facturas-externas/{id}")
-    public ResponseEntity<FacturaExternoDto> obtenerFacturaExternaPorId(@PathVariable Long id) {
+    public ResponseEntity<FacturaExternoDto> obtenerFacturaExterna(@PathVariable Long id) {
         FacturaExternoDto factura = service.buscarFacturaExternaPorId(id);
-
         if (factura != null) {
             return ResponseEntity.ok(factura);
-        } else {
-
-            return ResponseEntity.notFound().build();
         }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/api/facturas-externas/dni/{dni}")
+    public ResponseEntity<FacturaExternoDto> obtenerFacturaPorDni(@PathVariable String dni) {
+        FacturaExternoDto factura = service.buscarUltimaFacturaPorDni(dni);
+        if (factura != null) {
+            return ResponseEntity.ok(factura);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @Override
