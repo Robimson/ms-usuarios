@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
-
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -22,12 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
 
-
     const orderIdInput = document.getElementById('order-id');
     const cedulaBuscarInput = document.getElementById('cedula-buscar');
     const btnVerificarMaestro = document.getElementById('btn-verificar-maestro');
-
-
 
     const showToast = (message, type = 'success') => {
         const container = document.getElementById('toast-container');
@@ -41,19 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
-
     const rellenarCampos = (nombre, dni, email, direccion, telefono = '', orderId = '') => {
         document.getElementById('client-name').value = nombre || '';
         document.getElementById('client-cedula').value = dni || '';
         document.getElementById('email').value = email || '';
         document.getElementById('address').value = direccion || '';
         document.getElementById('phone').value = telefono || '';
-
         if (orderId) {
             orderIdInput.value = orderId;
         }
     };
-
 
     const verificarDatosMaestro = async () => {
         const orderId = orderIdInput.value.trim();
@@ -102,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-
             if (cedula) {
                 const response = await fetch(`${apiClientesExternosUrl}/${cedula}`);
                 if (response.ok) {
@@ -115,17 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         cliente.telefono,
                         ''
                     );
-                    showToast(`Cliente encontrado. Por favor, asigne el ID de orden manualmente.`);
+                    showToast(`Cliente encontrado. Ingrese ID de orden manualmente.`);
                     return;
                 }
             }
 
-
-            showToast('Información no encontrada en ningún sistema', 'error');
+            showToast('No se encontró información externa', 'error');
 
         } catch (e) {
-            console.error(e);
-            showToast('Error de comunicación con los servidores externos', 'error');
+            showToast('Error de conexión con los servidores', 'error');
         } finally {
             btnVerificarMaestro.textContent = 'Verificar';
             btnVerificarMaestro.disabled = false;
@@ -145,8 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-
-
     const fetchStats = async () => {
         try {
             const response = await fetch(`${apiUrl}/estadisticas`);
@@ -160,10 +148,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fetchDeliveries = async () => {
         try {
-            const response = await fetch(apiUrl);
-            allDeliveries = await response.json();
-            renderDeliveries(allDeliveries);
-        } catch (e) { showToast('Error de conexión', 'error'); }
+            const res = await fetch(apiUrl);
+            if (res.ok) {
+                allDeliveries = await res.json();
+                renderDeliveries(allDeliveries);
+            }
+        } catch (e) { console.error(e); }
     };
 
     const saveDelivery = async (delivery) => {
@@ -179,15 +169,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                showToast(isEdit ? 'Actualizado correctamente' : 'Entrega registrada con éxito');
+                showToast(isEdit ? 'Actualizado correctamente' : 'Registrado con éxito');
                 closeModal();
                 fetchDeliveries();
                 fetchStats();
             } else {
                 const errorData = await response.json();
-                showToast(errorData.message || 'Error al procesar la entrega', 'error');
+                showToast(errorData.message || 'Error al procesar', 'error');
             }
-        } catch (e) { showToast('Error crítico de red', 'error'); }
+        } catch (e) { showToast('Error de red', 'error'); }
     };
 
     const deleteDelivery = async (id) => {
@@ -195,14 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
             if (response.ok) {
-                showToast('Entrega eliminada');
+                showToast('Eliminado');
                 fetchDeliveries();
                 fetchStats();
             }
         } catch (e) { showToast('Error al eliminar', 'error'); }
     };
-
-
 
     const renderDeliveries = (deliveries) => {
         deliveriesGrid.innerHTML = '';
@@ -230,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>👤 Cliente:</strong> ${d.clientName || 'No registrado'}</p>
                     <p><strong>🆔 Cédula:</strong> ${d.clientCedula || 'N/A'}</p>
                     <p><strong>📍 Dirección:</strong> ${d.address}</p>
-                    <p><strong>📞 Teléfono:</strong> ${d.phone || 'N/A'}</p>
                     <p><strong>📧 Email:</strong> ${d.email || 'N/A'}</p>
                     <p><strong>📦 Seguimiento:</strong> ${d.trackingNumber || 'N/A'}</p>
                 </div>
@@ -247,17 +234,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-
     const openHistory = async (d) => {
         const content = document.getElementById('drawer-content');
-        content.innerHTML = '<p style="text-align:center;">Cargando detalles de productos... 🚚</p>';
+        content.innerHTML = '<p style="text-align:center;">Cargando detalles... 🚚</p>';
 
         drawer.classList.remove('hidden');
         drawerBackdrop.classList.remove('hidden');
 
         try {
             const response = await fetch(`${apiFacturasExternasUrl}/${d.orderId}`);
-            let productosHTML = '<p style="color: #64748b; font-style: italic;">No se encontraron detalles de productos en facturación.</p>';
+            let productosHTML = '<p>No hay detalles de productos.</p>';
 
             if (response.ok) {
                 const factura = await response.json();
@@ -275,13 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${factura.detalles.map(item => `
                                 <tr style="border-bottom: 1px solid #f1f5f9;">
                                     <td style="padding: 8px;">${item.cantidad}</td>
-                                    <td style="padding: 8px;">${item.productoNombre || 'Producto sin nombre'}</td>
+                                    <td style="padding: 8px;">${item.productoNombre || 'S/N'}</td>
                                     <td style="padding: 8px; text-align: right;">$${item.precioUnitario.toFixed(2)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
-                    <div style="text-align: right; margin-top: 15px; font-weight: 700; color: #1e293b;">
+                    <div style="text-align: right; margin-top: 15px; font-weight: 700;">
                         Total Factura: $${factura.total.toFixed(2)}
                     </div>
                 `;
@@ -294,25 +280,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>👤 Cliente:</strong> ${d.clientName}</p>
                 <p><strong>📍 Destino:</strong> ${d.address}</p>
             </div>
-            
-            <h4 style="margin-bottom: 10px; color: #475569;">📋 Contenido del Paquete</h4>
+            <h4 style="margin-bottom: 10px; color: #475569;">📋 Contenido</h4>
             ${productosHTML}
-
             <hr style="margin: 25px 0; border: 0; border-top: 1px dashed #cbd5e1;">
-
             <div class="timeline">
                 <div class="timeline-item">
-                    <h4>Registro de Envío</h4>
-                    <p>Datos sincronizados con Facturación y Clientes externos.</p>
+                    <h4>Registro</h4>
+                    <p>Datos validados con facturación.</p>
                 </div>
                 <div class="timeline-item">
                     <h4>Estado: ${d.status}</h4>
-                    <p>El paquete está siguiendo el flujo logístico estándar.</p>
                 </div>
-            </div>
-        `;
+            </div>`;
         } catch (e) {
-            content.innerHTML = '<p style="color:red;">Error al cargar detalles de la factura.</p>';
+            content.innerHTML = '<p style="color:red;">Error al cargar detalles.</p>';
         }
     };
 
@@ -340,8 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
         drawer.classList.add('hidden');
         drawerBackdrop.classList.add('hidden');
     };
-
-
 
     document.getElementById('add-delivery-btn').onclick = () => {
         document.getElementById('modal-title').textContent = 'Agregar Nueva Entrega';
@@ -374,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDelivery(data);
     };
 
-
     searchInput.oninput = () => {
         const term = searchInput.value.trim().toLowerCase();
         if (term === "") {
@@ -385,8 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const filtered = allDeliveries.filter(d =>
             d.orderId?.toString().includes(term) ||
             d.clientName?.toLowerCase().includes(term) ||
-            d.clientCedula?.toLowerCase().includes(term) ||
-            d.trackingNumber?.toLowerCase().includes(term)
+            d.clientCedula?.toLowerCase().includes(term)
         );
         renderDeliveries(filtered);
         resetSearchBtn.style.display = 'inline-block';
@@ -405,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
             resetSearchBtn.style.display = 'inline-block';
         };
     });
-
 
     fetchDeliveries();
     fetchStats();
