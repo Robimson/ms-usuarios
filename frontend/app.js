@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     const apiUrl = 'http://130.107.144.11:8092/api/entregas';
     const apiClientesExternosUrl = 'http://130.107.144.11:8092/api/clientes-externos';
     const apiFacturasExternasUrl = 'http://130.107.144.11:8092/api/facturas-externas';
@@ -13,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
-
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -22,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const drawerBackdrop = document.getElementById('drawer-backdrop');
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
-
 
     const orderIdInput = document.getElementById('order-id');
     const cedulaBuscarInput = document.getElementById('cedula-buscar');
@@ -41,13 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
-    const rellenarCampos = (nombre, dni, email, direccion, telefono = '') => {
+    const rellenarCampos = (nombre, dni, email, direccion, telefono = '', orderId = '') => {
         document.getElementById('client-name').value = nombre || '';
         document.getElementById('client-cedula').value = dni || '';
         document.getElementById('email').value = email || '';
         document.getElementById('address').value = direccion || '';
         document.getElementById('phone').value = telefono || '';
-        if(orderId) document.getElementById('order-id').value = orderId;
+
+        if (orderId) {
+            document.getElementById('order-id').value = orderId;
+        }
     };
 
 
@@ -63,8 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             btnVerificarMaestro.textContent = 'Buscando...';
             btnVerificarMaestro.disabled = true;
-            let encontrado = false;
-
 
             if (orderId) {
                 const response = await fetch(`${apiFacturasExternasUrl}/${orderId}`);
@@ -74,16 +72,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         factura.cliente.nombre,
                         factura.cliente.dni,
                         factura.cliente.email,
-                        factura.cliente.direccion
+                        factura.cliente.direccion,
+                        '',
+                        factura.id
                     );
-                    showToast(`Datos de Factura #${orderId} cargados correctamente`);
-                    encontrado = true;
-                } else if (!cedula) {
-                    showToast('No se encontró la factura con ese ID', 'error');
+                    showToast(`Datos de Factura #${orderId} cargados`);
+                    return;
                 }
             }
 
-            if (!encontrado && cedula) {
+            if (cedula) {
                 const response = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`);
                 if (response.ok) {
                     const factura = await response.json();
@@ -91,14 +89,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         factura.cliente.nombre,
                         factura.cliente.dni,
                         factura.cliente.email,
-                        factura.cliente.direccion
+                        factura.cliente.direccion,
+                        '',
+                        factura.id
                     );
-                    showToast(`Dirección recuperada de la última factura del cliente`);
-                    encontrado = true;
+                    showToast(`Dirección e ID recuperados de la última factura del cliente`);
+                    return;
                 }
             }
 
-            if (!encontrado && cedula) {
+
+            if (cedula) {
                 const response = await fetch(`${apiClientesExternosUrl}/${cedula}`);
                 if (response.ok) {
                     const cliente = await response.json();
@@ -107,18 +108,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         cliente.cedula,
                         cliente.correo,
                         cliente.direccion,
-                        cliente.telefono
+                        cliente.telefono,
+                        ''
                     );
-                    showToast(`Datos personales cargados desde Micro de Clientes`);
-                    encontrado = true;
+                    showToast(`Datos personales cargados (Ingrese ID de orden manualmente)`);
+                    return;
                 }
             }
 
-            if (!encontrado) {
-                showToast('No se encontró información en ningún sistema externo', 'error');
-            }
+            showToast('No se encontró información en ningún sistema externo', 'error');
 
         } catch (e) {
+            console.error(e);
             showToast('Error de conexión con los servidores externos', 'error');
         } finally {
             btnVerificarMaestro.textContent = 'Verificar';
@@ -129,15 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnVerificarMaestro) {
         btnVerificarMaestro.onclick = verificarDatosMaestro;
     }
-
-    [orderIdInput, cedulaBuscarInput].forEach(input => {
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                verificarDatosMaestro();
-            }
-        });
-    });
 
 
 
@@ -197,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+
     const renderDeliveries = (deliveries) => {
         deliveriesGrid.innerHTML = '';
         const sorted = [...deliveries].sort((a, b) => {
@@ -249,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Destino:</strong> ${d.address}</p>
             </div>
             <div class="timeline">
-                <div class="timeline-item"><h4>Registro</h4><p>Datos validados e integrados con micros externos.</p></div>
+                <div class="timeline-item"><h4>Registro</h4><p>Datos sincronizados con Facturación y Clientes.</p></div>
                 <div class="timeline-item"><h4>Estado Actual: ${d.status}</h4><p>Notificación enviada a: ${d.email || 'N/A'}</p></div>
             </div>
         `;
