@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
-
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -54,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cliente = await response.json();
 
                 document.getElementById('client-name').value = `${cliente.nombre} ${cliente.apellido}`;
+                document.getElementById('client-cedula').value = cliente.cedula;
                 document.getElementById('phone').value = cliente.telefono || '';
                 document.getElementById('email').value = cliente.correo || '';
                 document.getElementById('address').value = cliente.direccion || '';
@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 showToast('Cliente no encontrado en el sistema externo', 'error');
                 document.getElementById('client-name').value = '';
+                document.getElementById('client-cedula').value = '';
                 document.getElementById('phone').value = '';
                 document.getElementById('email').value = '';
             }
@@ -104,7 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
             d.orderId?.toString().includes(term) ||
             d.address?.toLowerCase().includes(term) ||
             d.email?.toLowerCase().includes(term) ||
-            d.clientName?.toLowerCase().includes(term)
+            d.clientName?.toLowerCase().includes(term) ||
+            d.clientCedula?.toLowerCase().includes(term)
         );
         renderDeliveries(filtered);
         resetSearchBtn.style.display = 'inline-block';
@@ -185,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="card-body">
                     <p><strong>👤 Cliente:</strong> ${d.clientName || 'No registrado'}</p>
+                    <p><strong>🆔 Cédula:</strong> ${d.clientCedula || 'N/A'}</p>
                     <p><strong>📍 Dirección:</strong> ${d.address}</p>
                     <p><strong>📞 Teléfono:</strong> ${d.phone || 'N/A'}</p>
                     <p><strong>📧 Email:</strong> ${d.email || 'N/A'}</p>
@@ -209,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="drawer-info-box">
                 <p><strong>Orden:</strong> #${d.orderId}</p>
                 <p><strong>Cliente:</strong> ${d.clientName}</p>
+                <p><strong>Cédula:</strong> ${d.clientCedula}</p>
                 <p><strong>Contacto:</strong> ${d.phone}</p>
                 <p><strong>Destino:</strong> ${d.address}</p>
             </div>
@@ -239,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('status').value = d.status;
 
         document.getElementById('client-name').value = d.clientName || '';
+        document.getElementById('client-cedula').value = d.clientCedula || '';
         document.getElementById('phone').value = d.phone || '';
 
         if (cedulaBuscarInput) cedulaBuscarInput.parentElement.parentElement.style.display = 'none';
@@ -282,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             trackingNumber: document.getElementById('tracking-number').value,
             status: document.getElementById('status').value,
             clientName: document.getElementById('client-name').value,
+            clientCedula: document.getElementById('client-cedula').value,
             phone: document.getElementById('phone').value
         };
         const id = document.getElementById('delivery-id').value;

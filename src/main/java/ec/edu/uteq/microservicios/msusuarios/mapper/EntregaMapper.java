@@ -26,15 +26,14 @@ public class EntregaMapper {
         dto.setId(e.getId());
         dto.setOrderId(e.getOrderId());
         dto.setAddress(e.getAddress());
-
         dto.setClientName(e.getClientName());
         dto.setPhone(e.getPhone());
+        dto.setClientCedula(e.getClientCedula());
 
         dto.setTrackingNumber(toJsonNullable(e.getTrackingNumber()));
         dto.setEmail(toJsonNullable(e.getEmail()));
 
         if (e.getStatus() != null) {
-            // Convertimos el Enum de la Entidad al Enum del DTO
             dto.setStatus(EntregaDto.StatusEnum.fromValue(e.getStatus().name()));
         }
 
@@ -47,9 +46,9 @@ public class EntregaMapper {
         Entrega e = new Entrega();
         e.setOrderId(req.getOrderId());
         e.setAddress(req.getAddress());
-
         e.setClientName(req.getClientName());
         e.setPhone(req.getPhone());
+        e.setClientCedula(req.getClientCedula());
 
         e.setTrackingNumber(fromJsonNullable(req.getTrackingNumber()));
         e.setEmail(fromJsonNullable(req.getEmail()));
@@ -67,9 +66,9 @@ public class EntregaMapper {
         Entrega e = new Entrega();
         e.setOrderId(req.getOrderId());
         e.setAddress(req.getAddress());
-
         e.setClientName(req.getClientName());
         e.setPhone(req.getPhone());
+        e.setClientCedula(req.getClientCedula());
 
         e.setTrackingNumber(fromJsonNullable(req.getTrackingNumber()));
         e.setEmail(fromJsonNullable(req.getEmail()));

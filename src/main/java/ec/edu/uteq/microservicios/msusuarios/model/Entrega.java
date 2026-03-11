@@ -43,4 +43,7 @@ public class Entrega {
     @Column(length = 20)
     private String phone;
 
+    @Column(length = 20)
+    private String clientCedula;
+
 }
