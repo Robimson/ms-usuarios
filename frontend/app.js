@@ -65,7 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resFactura = await fetch(`${apiFacturasExternasUrl}/${orderId}`).catch(() => null);
                 if (resFactura && resFactura.ok) {
                     const factura = await resFactura.json();
-                    rellenarCampos(factura.cliente.nombre, factura.cliente.dni, factura.cliente.email, factura.cliente.direccion, '', factura.id);
+                    rellenarCampos(
+                        factura.cliente.nombre,
+                        (factura.cliente.dni || factura.cliente.cedula),
+                        factura.cliente.email,
+                        factura.cliente.direccion,
+                        '',
+                        factura.id
+                    );
                     showToast(`Datos de Factura #${orderId} cargados`);
                     finalizarBusqueda();
                     return;
@@ -76,8 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resFacturaDni = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`).catch(() => null);
                 if (resFacturaDni && resFacturaDni.ok) {
                     const factura = await resFacturaDni.json();
-                    rellenarCampos(factura.cliente.nombre, factura.cliente.dni, factura.cliente.email, factura.cliente.direccion, '', factura.id);
-                    showToast(`Factura e ID recuperados por cédula`);
+                    rellenarCampos(
+                        factura.cliente.nombre,
+                        (factura.cliente.dni || factura.cliente.cedula),
+                        factura.cliente.email,
+                        factura.cliente.direccion,
+                        '',
+                        factura.id
+                    );
+                    showToast(`Factura e ID #${factura.id} recuperados`);
                     finalizarBusqueda();
                     return;
                 }
@@ -85,7 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resCliente = await fetch(`${apiClientesExternosUrl}/${cedula}`).catch(() => null);
                 if (resCliente && resCliente.ok) {
                     const cliente = await resCliente.json();
-                    rellenarCampos(`${cliente.nombre} ${cliente.apellido}`, cliente.cedula, cliente.correo, cliente.direccion, cliente.telefono, '');
+                    rellenarCampos(
+                        `${cliente.nombre} ${cliente.apellido}`,
+                        cliente.cedula,
+                        cliente.correo,
+                        cliente.direccion,
+                        cliente.telefono,
+                        ''
+                    );
                     showToast(`Cliente encontrado (Sin factura reciente)`);
                     finalizarBusqueda();
                     return;

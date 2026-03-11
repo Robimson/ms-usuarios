@@ -16,8 +16,10 @@ public class FacturaExternoDto {
         private Long id;
         private String nombre;
         private String dni;
+        private String cedula;
         private String email;
         private String direccion;
+        private String apellido;
     }
 
     @Getter @Setter

@@ -76,21 +76,21 @@ public class EntregaServiceImpl implements EntregaService {
     }
 
 
-    public FacturaExternoDto buscarUltimaFacturaPorDni(String dni) {
+    @Override
+    public FacturaExternoDto buscarUltimaFacturaPorDni(String dniBusqueda) {
         String url = "http://74.249.40.210:8080/api/facturas";
         try {
             FacturaExternoDto[] facturas = restTemplate.getForObject(url, FacturaExternoDto[].class);
             if (facturas != null) {
                 return Arrays.stream(facturas)
-                        .filter(f -> f.getCliente() != null && dni.equals(f.getCliente().getDni()))
-
+                        .filter(f -> f.getCliente() != null &&
+                                (dniBusqueda.equals(f.getCliente().getDni()) ||
+                                        dniBusqueda.equals(f.getCliente().getCedula())))
                         .sorted((f1, f2) -> f2.getId().compareTo(f1.getId()))
                         .findFirst()
                         .orElse(null);
             }
-        } catch (Exception e) {
-            System.err.println("Error buscando DNI en facturas: " + e.getMessage());
-        }
+        } catch (Exception e) { System.err.println("Error: " + e.getMessage()); }
         return null;
     }
 
