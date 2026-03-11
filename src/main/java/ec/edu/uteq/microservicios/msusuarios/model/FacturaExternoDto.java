@@ -18,6 +18,8 @@ public class FacturaExternoDto {
         private String dni;
         private String cedula;
         private String email;
+        private String correo;
+        private String telefono;
         private String direccion;
         private String apellido;
     }
