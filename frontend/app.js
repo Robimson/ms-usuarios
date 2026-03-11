@@ -6,10 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let allDeliveries = [];
 
     const STATUS_MAP = {
-        'PENDIENTE': { class: 'status-PENDIENTE', label: 'En Espera',  icon: '⏳', priority: 1 },
-        'ENVIADO':   { class: 'status-ENVIADO',   label: 'En Camino',  icon: '🚚', priority: 2 },
-        'ENTREGADO': { class: 'status-ENTREGADO', label: 'Entregado',  icon: '✅', priority: 3 },
-        'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
+        'PENDIENTE': { class: 'status-PENDIENTE', label: 'En Espera', icon: '⏳', priority: 1 },
+        'ENVIADO': { class: 'status-ENVIADO', label: 'En Camino', icon: '🚚', priority: 2 },
+        'ENTREGADO': { class: 'status-ENTREGADO', label: 'Entregado', icon: '✅', priority: 3 },
+        'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado', icon: '❌', priority: 4 }
     };
 
     const deliveriesGrid = document.getElementById('deliveries-grid');
@@ -57,70 +57,53 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        btnVerificarMaestro.textContent = 'Buscando...';
+        btnVerificarMaestro.disabled = true;
+
         try {
-            btnVerificarMaestro.textContent = 'Buscando...';
-            btnVerificarMaestro.disabled = true;
-
             if (orderId) {
-                const response = await fetch(`${apiFacturasExternasUrl}/${orderId}`);
-                if (response.ok) {
-                    const factura = await response.json();
-                    rellenarCampos(
-                        factura.cliente.nombre,
-                        factura.cliente.dni,
-                        factura.cliente.email,
-                        factura.cliente.direccion,
-                        '',
-                        factura.id
-                    );
+                const resFactura = await fetch(`${apiFacturasExternasUrl}/${orderId}`).catch(() => null);
+                if (resFactura && resFactura.ok) {
+                    const factura = await resFactura.json();
+                    rellenarCampos(factura.cliente.nombre, factura.cliente.dni, factura.cliente.email, factura.cliente.direccion, '', factura.id);
                     showToast(`Datos de Factura #${orderId} cargados`);
+                    finalizarBusqueda();
                     return;
                 }
             }
 
             if (cedula) {
-                const response = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`);
-                if (response.ok) {
-                    const factura = await response.json();
-                    rellenarCampos(
-                        factura.cliente.nombre,
-                        factura.cliente.dni,
-                        factura.cliente.email,
-                        factura.cliente.direccion,
-                        '',
-                        factura.id
-                    );
-                    showToast(`Factura e ID #${factura.id} encontrados para este cliente`);
+                const resFacturaDni = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`).catch(() => null);
+                if (resFacturaDni && resFacturaDni.ok) {
+                    const factura = await resFacturaDni.json();
+                    rellenarCampos(factura.cliente.nombre, factura.cliente.dni, factura.cliente.email, factura.cliente.direccion, '', factura.id);
+                    showToast(`Factura e ID recuperados por cédula`);
+                    finalizarBusqueda();
+                    return;
+                }
+
+                const resCliente = await fetch(`${apiClientesExternosUrl}/${cedula}`).catch(() => null);
+                if (resCliente && resCliente.ok) {
+                    const cliente = await resCliente.json();
+                    rellenarCampos(`${cliente.nombre} ${cliente.apellido}`, cliente.cedula, cliente.correo, cliente.direccion, cliente.telefono, '');
+                    showToast(`Cliente encontrado (Sin factura reciente)`);
+                    finalizarBusqueda();
                     return;
                 }
             }
 
-            if (cedula) {
-                const response = await fetch(`${apiClientesExternosUrl}/${cedula}`);
-                if (response.ok) {
-                    const cliente = await response.json();
-                    rellenarCampos(
-                        `${cliente.nombre} ${cliente.apellido}`,
-                        cliente.cedula,
-                        cliente.correo,
-                        cliente.direccion,
-                        cliente.telefono,
-                        ''
-                    );
-                    showToast(`Cliente encontrado. Ingrese ID de orden manualmente.`);
-                    return;
-                }
-            }
-
-            showToast('No se encontró información externa', 'error');
-
+            showToast('No se encontró información en los sistemas externos', 'error');
         } catch (e) {
-            showToast('Error de conexión con los servidores', 'error');
+            showToast('Error al conectar con los servicios externos', 'error');
         } finally {
-            btnVerificarMaestro.textContent = 'Verificar';
-            btnVerificarMaestro.disabled = false;
+            finalizarBusqueda();
         }
     };
+
+    function finalizarBusqueda() {
+        btnVerificarMaestro.textContent = 'Verificar';
+        btnVerificarMaestro.disabled = false;
+    }
 
     if (btnVerificarMaestro) {
         btnVerificarMaestro.onclick = verificarDatosMaestro;
@@ -143,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('count-enviado').textContent = stats.ENVIADO || 0;
             document.getElementById('count-entregado').textContent = stats.ENTREGADO || 0;
             document.getElementById('count-cancelado').textContent = stats.CANCELADO || 0;
-        } catch (e) { console.error(e); }
+        } catch (e) { }
     };
 
     const fetchDeliveries = async () => {
@@ -153,31 +136,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 allDeliveries = await res.json();
                 renderDeliveries(allDeliveries);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { }
     };
 
     const saveDelivery = async (delivery) => {
         const isEdit = !!delivery.id;
         const method = isEdit ? 'PUT' : 'POST';
         const url = isEdit ? `${apiUrl}/${delivery.id}` : apiUrl;
-
         try {
             const response = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(delivery)
             });
-
             if (response.ok) {
-                showToast(isEdit ? 'Actualizado correctamente' : 'Registrado con éxito');
-                closeModal();
-                fetchDeliveries();
-                fetchStats();
+                showToast(isEdit ? 'Actualizado correctamente' : 'Entrega registrada');
+                closeModal(); fetchDeliveries(); fetchStats();
             } else {
                 const errorData = await response.json();
                 showToast(errorData.message || 'Error al procesar', 'error');
             }
-        } catch (e) { showToast('Error de red', 'error'); }
+        } catch (e) { showToast('Error de red al guardar', 'error'); }
     };
 
     const deleteDelivery = async (id) => {
@@ -185,26 +164,19 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
             if (response.ok) {
-                showToast('Eliminado');
-                fetchDeliveries();
-                fetchStats();
+                showToast('Entrega eliminada');
+                fetchDeliveries(); fetchStats();
             }
         } catch (e) { showToast('Error al eliminar', 'error'); }
     };
 
     const renderDeliveries = (deliveries) => {
         deliveriesGrid.innerHTML = '';
-        const sorted = [...deliveries].sort((a, b) => {
-            const priorityA = STATUS_MAP[a.status].priority;
-            const priorityB = STATUS_MAP[b.status].priority;
-            return (priorityA !== priorityB) ? priorityA - priorityB : b.id - a.id;
-        });
-
+        const sorted = [...deliveries].sort((a, b) => STATUS_MAP[a.status].priority - STATUS_MAP[b.status].priority || b.id - a.id);
         if (sorted.length === 0) {
             deliveriesGrid.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">No hay entregas registradas.</p>';
             return;
         }
-
         sorted.forEach(d => {
             const config = STATUS_MAP[d.status];
             const card = document.createElement('div');
@@ -218,15 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>👤 Cliente:</strong> ${d.clientName || 'No registrado'}</p>
                     <p><strong>🆔 Cédula:</strong> ${d.clientCedula || 'N/A'}</p>
                     <p><strong>📍 Dirección:</strong> ${d.address}</p>
-                    <p><strong>📧 Email:</strong> ${d.email || 'N/A'}</p>
                     <p><strong>📦 Seguimiento:</strong> ${d.trackingNumber || 'N/A'}</p>
                 </div>
                 <div class="card-footer">
                     <button class="card-button edit-btn">Editar</button>
                     <button class="card-button history-btn">📜 Historial</button>
                     <button class="card-button delete-btn">Eliminar</button>
-                </div>
-            `;
+                </div>`;
             deliveriesGrid.appendChild(card);
             card.querySelector('.edit-btn').onclick = () => openModalForEdit(d);
             card.querySelector('.delete-btn').onclick = () => deleteDelivery(d.id);
@@ -237,14 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const openHistory = async (d) => {
         const content = document.getElementById('drawer-content');
         content.innerHTML = '<p style="text-align:center;">Cargando detalles... 🚚</p>';
-
         drawer.classList.remove('hidden');
         drawerBackdrop.classList.remove('hidden');
-
         try {
             const response = await fetch(`${apiFacturasExternasUrl}/${d.orderId}`);
-            let productosHTML = '<p>No hay detalles de productos.</p>';
-
+            let productosHTML = '<p>No se encontraron detalles de productos.</p>';
             if (response.ok) {
                 const factura = await response.json();
                 if (factura.detalles && factura.detalles.length > 0) {
@@ -269,11 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </table>
                     <div style="text-align: right; margin-top: 15px; font-weight: 700;">
                         Total Factura: $${factura.total.toFixed(2)}
-                    </div>
-                `;
+                    </div>`;
                 }
             }
-
             content.innerHTML = `
             <div class="drawer-info-box">
                 <p><strong>📦 Orden:</strong> #${d.orderId}</p>
@@ -284,17 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ${productosHTML}
             <hr style="margin: 25px 0; border: 0; border-top: 1px dashed #cbd5e1;">
             <div class="timeline">
-                <div class="timeline-item">
-                    <h4>Registro</h4>
-                    <p>Datos validados con facturación.</p>
-                </div>
-                <div class="timeline-item">
-                    <h4>Estado: ${d.status}</h4>
-                </div>
+                <div class="timeline-item"><h4>Registro</h4><p>Datos validados con facturación.</p></div>
+                <div class="timeline-item"><h4>Estado: ${d.status}</h4></div>
             </div>`;
-        } catch (e) {
-            content.innerHTML = '<p style="color:red;">Error al cargar detalles.</p>';
-        }
+        } catch (e) { content.innerHTML = '<p style="color:red;">Error al cargar detalles.</p>'; }
     };
 
     const openModalForEdit = (d) => {
@@ -308,9 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('client-name').value = d.clientName || '';
         document.getElementById('client-cedula').value = d.clientCedula || '';
         document.getElementById('phone').value = d.phone || '';
-
         btnVerificarMaestro.parentElement.style.display = 'none';
-
         modal.classList.remove('hidden');
         backdrop.classList.remove('hidden');
     };
