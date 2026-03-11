@@ -62,15 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (orderId) {
-                const resFactura = await fetch(`${apiFacturasExternasUrl}/${orderId}`).catch(() => null);
-                if (resFactura && resFactura.ok) {
-                    const factura = await resFactura.json();
+                const response = await fetch(`${apiFacturasExternasUrl}/${orderId}`).catch(() => null);
+                if (response && response.ok) {
+                    const factura = await response.json();
                     rellenarCampos(
                         factura.cliente.nombre,
                         (factura.cliente.dni || factura.cliente.cedula),
-                        factura.cliente.email,
+                        (factura.cliente.email || factura.cliente.correo),
                         factura.cliente.direccion,
-                        '',
+                        (factura.cliente.telefono || ''),
                         factura.id
                     );
                     showToast(`Datos de Factura #${orderId} cargados`);
@@ -80,25 +80,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (cedula) {
-                const resFacturaDni = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`).catch(() => null);
-                if (resFacturaDni && resFacturaDni.ok) {
-                    const factura = await resFacturaDni.json();
+                const response = await fetch(`${apiFacturasExternasUrl}/dni/${cedula}`).catch(() => null);
+                if (response && response.ok) {
+                    const factura = await response.json();
                     rellenarCampos(
                         factura.cliente.nombre,
                         (factura.cliente.dni || factura.cliente.cedula),
-                        factura.cliente.email,
+                        (factura.cliente.email || factura.cliente.correo),
                         factura.cliente.direccion,
-                        '',
+                        (factura.cliente.telefono || ''),
                         factura.id
                     );
-                    showToast(`Factura e ID #${factura.id} recuperados`);
+                    showToast(`¡Factura e ID #${factura.id} encontrados por cédula!`);
                     finalizarBusqueda();
                     return;
                 }
 
-                const resCliente = await fetch(`${apiClientesExternosUrl}/${cedula}`).catch(() => null);
-                if (resCliente && resCliente.ok) {
-                    const cliente = await resCliente.json();
+                const responseCliente = await fetch(`${apiClientesExternosUrl}/${cedula}`).catch(() => null);
+                if (responseCliente && responseCliente.ok) {
+                    const cliente = await responseCliente.json();
                     rellenarCampos(
                         `${cliente.nombre} ${cliente.apellido}`,
                         cliente.cedula,
@@ -107,15 +107,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         cliente.telefono,
                         ''
                     );
-                    showToast(`Cliente encontrado (Sin factura reciente)`);
+                    showToast(`Cliente encontrado. Por favor asigne el ID manual.`);
                     finalizarBusqueda();
                     return;
                 }
             }
 
-            showToast('No se encontró información en los sistemas externos', 'error');
+            showToast('No se encontró información en ningún sistema', 'error');
+
         } catch (e) {
-            showToast('Error al conectar con los servicios externos', 'error');
+            showToast('Error de conexión con los servidores externos', 'error');
         } finally {
             finalizarBusqueda();
         }
