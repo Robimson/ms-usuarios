@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
+
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -51,15 +52,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const cliente = await response.json();
-                document.getElementById('address').value = cliente.direccion || '';
+
+                document.getElementById('client-name').value = `${cliente.nombre} ${cliente.apellido}`;
+                document.getElementById('phone').value = cliente.telefono || '';
                 document.getElementById('email').value = cliente.correo || '';
-                showToast(`Cliente encontrado: ${cliente.nombre} ${cliente.apellido}`);
+                document.getElementById('address').value = cliente.direccion || '';
+
+                showToast(`Datos de ${cliente.nombre} cargados correctamente`);
             } else {
                 showToast('Cliente no encontrado en el sistema externo', 'error');
+                document.getElementById('client-name').value = '';
+                document.getElementById('phone').value = '';
+                document.getElementById('email').value = '';
             }
         } catch (e) {
-            showToast('Error al conectar con el servicio de búsqueda', 'error');
-            console.error(e);
+            showToast('Error al conectar con el servidor', 'error');
         } finally {
             btnVerificarCliente.textContent = 'Verificar';
             btnVerificarCliente.disabled = false;
@@ -97,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             d.orderId?.toString().includes(term) ||
             d.address?.toLowerCase().includes(term) ||
             d.email?.toLowerCase().includes(term) ||
-            d.trackingNumber?.toLowerCase().includes(term)
+            d.clientName?.toLowerCase().includes(term)
         );
         renderDeliveries(filtered);
         resetSearchBtn.style.display = 'inline-block';
@@ -121,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(apiUrl);
             allDeliveries = await response.json();
             renderDeliveries(allDeliveries);
-        } catch (e) { showToast('Error de conexión con el servidor', 'error'); }
+        } catch (e) { showToast('Error de conexión', 'error'); }
     };
 
     const saveDelivery = async (delivery) => {
@@ -137,19 +144,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                showToast(isEdit ? 'Actualizado correctamente' : 'Creado con éxito');
+                showToast(isEdit ? 'Actualizado correctamente' : 'Entrega registrada con éxito');
                 closeModal();
                 fetchDeliveries();
                 fetchStats();
             } else {
                 const errorData = await response.json();
-                showToast(errorData.message || 'Error al guardar', 'error');
+                showToast(errorData.message || 'Error al procesar', 'error');
             }
         } catch (e) { showToast('Error crítico de red', 'error'); }
     };
 
     const deleteDelivery = async (id) => {
-        if (!confirm('¿Eliminar esta entrega?')) return;
+        if (!confirm('¿Eliminar esta entrega permanentemente?')) return;
         try {
             const response = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
             if (response.ok) {
@@ -164,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deliveriesGrid.innerHTML = '';
         const sorted = sortDeliveries([...deliveries]);
         if (sorted.length === 0) {
-            deliveriesGrid.innerHTML = '<p style="text-align:center; color:#999;">No hay resultados.</p>';
+            deliveriesGrid.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">No hay entregas registradas.</p>';
             return;
         }
         sorted.forEach(d => {
@@ -177,7 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="status-badge ${config.class}">${config.icon} ${config.label}</span>
                 </div>
                 <div class="card-body">
+                    <p><strong>👤 Cliente:</strong> ${d.clientName || 'No registrado'}</p>
                     <p><strong>📍 Dirección:</strong> ${d.address}</p>
+                    <p><strong>📞 Teléfono:</strong> ${d.phone || 'N/A'}</p>
                     <p><strong>📧 Email:</strong> ${d.email || 'N/A'}</p>
                     <p><strong>📦 Seguimiento:</strong> ${d.trackingNumber || 'N/A'}</p>
                 </div>
@@ -199,12 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
         content.innerHTML = `
             <div class="drawer-info-box">
                 <p><strong>Orden:</strong> #${d.orderId}</p>
-                <p><strong>Cliente:</strong> ${d.email}</p>
+                <p><strong>Cliente:</strong> ${d.clientName}</p>
+                <p><strong>Contacto:</strong> ${d.phone}</p>
                 <p><strong>Destino:</strong> ${d.address}</p>
             </div>
             <div class="timeline">
-                <div class="timeline-item"><h4>Orden Registrada</h4><p>Datos validados en sistema.</p></div>
-                <div class="timeline-item"><h4>Estado: ${d.status}</h4><p>Notificación enviada.</p></div>
+                <div class="timeline-item"><h4>Orden Registrada</h4><p>Datos validados por microservicio de clientes.</p></div>
+                <div class="timeline-item"><h4>Estado: ${d.status}</h4><p>Notificación enviada al cliente.</p></div>
             </div>
         `;
         drawer.classList.remove('hidden');
@@ -228,6 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('tracking-number').value = d.trackingNumber || '';
         document.getElementById('status').value = d.status;
 
+        document.getElementById('client-name').value = d.clientName || '';
+        document.getElementById('phone').value = d.phone || '';
 
         if (cedulaBuscarInput) cedulaBuscarInput.parentElement.parentElement.style.display = 'none';
 
@@ -247,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
         deliveryForm.reset();
         document.getElementById('delivery-id').value = '';
 
-        // Mostrar buscador al agregar nueva entrega
         if (cedulaBuscarInput) {
             cedulaBuscarInput.parentElement.parentElement.style.display = 'block';
             cedulaBuscarInput.value = '';
@@ -269,7 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
             address: document.getElementById('address').value,
             email: document.getElementById('email').value,
             trackingNumber: document.getElementById('tracking-number').value,
-            status: document.getElementById('status').value
+            status: document.getElementById('status').value,
+            clientName: document.getElementById('client-name').value,
+            phone: document.getElementById('phone').value
         };
         const id = document.getElementById('delivery-id').value;
         if (id) data.id = parseInt(id);

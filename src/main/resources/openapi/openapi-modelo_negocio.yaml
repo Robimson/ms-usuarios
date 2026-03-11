@@ -128,6 +128,12 @@ components:
           format: email
           description: Correo electrónico del cliente.
           nullable: true
+        clientName:
+          type: string
+          description: Nombre completo del cliente receptor.
+        phone:
+          type: string
+          description: Teléfono de contacto del cliente.
 
     EntregaCreateRequest:
       type: object
@@ -162,6 +168,10 @@ components:
           format: email
           description: Correo electrónico del cliente.
           nullable: true
+        clientName:
+          type: string
+        phone:
+          type: string
 
     EntregaUpdateRequest:
       type: object
@@ -196,3 +206,7 @@ components:
           format: email
           description: Correo electrónico del cliente.
           nullable: true
+        clientName:
+          type: string
+        phone:
+          type: string
