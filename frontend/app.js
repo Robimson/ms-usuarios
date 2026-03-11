@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('email').value = email || '';
         document.getElementById('address').value = direccion || '';
         document.getElementById('phone').value = telefono || '';
+        if(orderId) document.getElementById('order-id').value = orderId;
     };
 
 
