@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'CANCELADO': { class: 'status-CANCELADO', label: 'Cancelado',  icon: '❌', priority: 4 }
     };
 
+
     const deliveriesGrid = document.getElementById('deliveries-grid');
     const deliveryForm = document.getElementById('delivery-form');
     const modal = document.getElementById('delivery-modal');
@@ -21,9 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
 
+
     const orderIdInput = document.getElementById('order-id');
     const cedulaBuscarInput = document.getElementById('cedula-buscar');
     const btnVerificarMaestro = document.getElementById('btn-verificar-maestro');
+
 
 
     const showToast = (message, type = 'success') => {
@@ -38,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
+
     const rellenarCampos = (nombre, dni, email, direccion, telefono = '', orderId = '') => {
         document.getElementById('client-name').value = nombre || '';
         document.getElementById('client-cedula').value = dni || '';
@@ -46,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('phone').value = telefono || '';
 
         if (orderId) {
-            document.getElementById('order-id').value = orderId;
+            orderIdInput.value = orderId;
         }
     };
 
@@ -93,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         '',
                         factura.id
                     );
-                    showToast(`Dirección e ID recuperados de la última factura del cliente`);
+                    showToast(`Factura e ID #${factura.id} encontrados para este cliente`);
                     return;
                 }
             }
@@ -111,16 +115,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         cliente.telefono,
                         ''
                     );
-                    showToast(`Datos personales cargados (Ingrese ID de orden manualmente)`);
+                    showToast(`Cliente encontrado. Por favor, asigne el ID de orden manualmente.`);
                     return;
                 }
             }
 
-            showToast('No se encontró información en ningún sistema externo', 'error');
+
+            showToast('Información no encontrada en ningún sistema', 'error');
 
         } catch (e) {
             console.error(e);
-            showToast('Error de conexión con los servidores externos', 'error');
+            showToast('Error de comunicación con los servidores externos', 'error');
         } finally {
             btnVerificarMaestro.textContent = 'Verificar';
             btnVerificarMaestro.disabled = false;
@@ -130,6 +135,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnVerificarMaestro) {
         btnVerificarMaestro.onclick = verificarDatosMaestro;
     }
+
+    [orderIdInput, cedulaBuscarInput].forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                verificarDatosMaestro();
+            }
+        });
+    });
 
 
 
@@ -149,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(apiUrl);
             allDeliveries = await response.json();
             renderDeliveries(allDeliveries);
-        } catch (e) { showToast('Error de conexión con el microservicio', 'error'); }
+        } catch (e) { showToast('Error de conexión', 'error'); }
     };
 
     const saveDelivery = async (delivery) => {
@@ -233,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+
     const openHistory = async (d) => {
         const content = document.getElementById('drawer-content');
         content.innerHTML = '<p style="text-align:center;">Cargando detalles de productos... 🚚</p>';
@@ -272,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 }
             }
-
 
             content.innerHTML = `
             <div class="drawer-info-box">
@@ -327,6 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
         drawerBackdrop.classList.add('hidden');
     };
 
+
+
     document.getElementById('add-delivery-btn').onclick = () => {
         document.getElementById('modal-title').textContent = 'Agregar Nueva Entrega';
         deliveryForm.reset();
@@ -358,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDelivery(data);
     };
 
+
     searchInput.oninput = () => {
         const term = searchInput.value.trim().toLowerCase();
         if (term === "") {
@@ -388,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resetSearchBtn.style.display = 'inline-block';
         };
     });
+
 
     fetchDeliveries();
     fetchStats();
