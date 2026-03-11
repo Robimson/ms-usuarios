@@ -233,21 +233,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const openHistory = (d) => {
+    const openHistory = async (d) => {
         const content = document.getElementById('drawer-content');
-        content.innerHTML = `
-            <div class="drawer-info-box">
-                <p><strong>Orden:</strong> #${d.orderId}</p>
-                <p><strong>Cliente:</strong> ${d.clientName}</p>
-                <p><strong>Destino:</strong> ${d.address}</p>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item"><h4>Registro</h4><p>Datos sincronizados con Facturación y Clientes.</p></div>
-                <div class="timeline-item"><h4>Estado Actual: ${d.status}</h4><p>Notificación enviada a: ${d.email || 'N/A'}</p></div>
-            </div>
-        `;
+        content.innerHTML = '<p style="text-align:center;">Cargando detalles de productos... 🚚</p>';
+
         drawer.classList.remove('hidden');
         drawerBackdrop.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`${apiFacturasExternasUrl}/${d.orderId}`);
+            let productosHTML = '<p style="color: #64748b; font-style: italic;">No se encontraron detalles de productos en facturación.</p>';
+
+            if (response.ok) {
+                const factura = await response.json();
+                if (factura.detalles && factura.detalles.length > 0) {
+                    productosHTML = `
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
+                                <th style="padding: 8px;">Cant.</th>
+                                <th style="padding: 8px;">Producto</th>
+                                <th style="padding: 8px; text-align: right;">Precio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${factura.detalles.map(item => `
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td style="padding: 8px;">${item.cantidad}</td>
+                                    <td style="padding: 8px;">${item.productoNombre || 'Producto sin nombre'}</td>
+                                    <td style="padding: 8px; text-align: right;">$${item.precioUnitario.toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div style="text-align: right; margin-top: 15px; font-weight: 700; color: #1e293b;">
+                        Total Factura: $${factura.total.toFixed(2)}
+                    </div>
+                `;
+                }
+            }
+
+
+            content.innerHTML = `
+            <div class="drawer-info-box">
+                <p><strong>📦 Orden:</strong> #${d.orderId}</p>
+                <p><strong>👤 Cliente:</strong> ${d.clientName}</p>
+                <p><strong>📍 Destino:</strong> ${d.address}</p>
+            </div>
+            
+            <h4 style="margin-bottom: 10px; color: #475569;">📋 Contenido del Paquete</h4>
+            ${productosHTML}
+
+            <hr style="margin: 25px 0; border: 0; border-top: 1px dashed #cbd5e1;">
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>Registro de Envío</h4>
+                    <p>Datos sincronizados con Facturación y Clientes externos.</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>Estado: ${d.status}</h4>
+                    <p>El paquete está siguiendo el flujo logístico estándar.</p>
+                </div>
+            </div>
+        `;
+        } catch (e) {
+            content.innerHTML = '<p style="color:red;">Error al cargar detalles de la factura.</p>';
+        }
     };
 
     const openModalForEdit = (d) => {
