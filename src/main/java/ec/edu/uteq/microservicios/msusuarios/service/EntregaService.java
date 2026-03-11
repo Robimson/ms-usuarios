@@ -2,6 +2,7 @@ package ec.edu.uteq.microservicios.msusuarios.service;
 
 import ec.edu.uteq.microservicios.msusuarios.model.ClienteExternoDto;
 import ec.edu.uteq.microservicios.msusuarios.model.Entrega;
+import ec.edu.uteq.microservicios.msusuarios.model.FacturaExternoDto;
 //import org.springframework.lang.NonNull;
 import java.util.List;
 import java.util.Map;
@@ -16,4 +17,6 @@ public interface EntregaService {
     Map<String, Long> obtenerEstadisticas();
     List<ClienteExternoDto> listarClientesDelOtroGrupo();
     ClienteExternoDto buscarClienteExternoPorCedula(String cedula);
+    FacturaExternoDto buscarFacturaExternaPorId(Long id);
+
 }

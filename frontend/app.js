@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const apiUrl = 'http://130.107.144.11:8092/api/entregas';
     const apiClientesExternosUrl = 'http://130.107.144.11:8092/api/clientes-externos';
+    const apiFacturasExternasUrl = 'http://130.107.144.11:8092/api/facturas-externas';
 
     let allDeliveries = [];
 
@@ -20,8 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const resetSearchBtn = document.getElementById('reset-search-btn');
 
+    const orderIdInput = document.getElementById('order-id');
     const cedulaBuscarInput = document.getElementById('cedula-buscar');
-    const btnVerificarCliente = document.getElementById('btn-verificar-cliente');
+    const btnVerificarMaestro = document.getElementById('btn-verificar-maestro');
+
 
     const showToast = (message, type = 'success') => {
         const container = document.getElementById('toast-container');
@@ -35,84 +38,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
-    const verificarCliente = async () => {
+
+    const verificarDatosMaestro = async () => {
+        const orderId = orderIdInput.value.trim();
         const cedula = cedulaBuscarInput.value.trim();
 
-        if (!cedula) {
-            showToast('Por favor, ingrese una cédula', 'error');
+        if (!orderId && !cedula) {
+            showToast('Por favor, ingrese un ID de Orden o una Cédula', 'error');
             return;
         }
 
         try {
-            btnVerificarCliente.textContent = 'Buscando...';
-            btnVerificarCliente.disabled = true;
+            btnVerificarMaestro.textContent = 'Buscando...';
+            btnVerificarMaestro.disabled = true;
 
-            const response = await fetch(`${apiClientesExternosUrl}/${cedula}`);
+            if (orderId) {
+                const responseFactura = await fetch(`${apiFacturasExternasUrl}/${orderId}`);
+                if (responseFactura.ok) {
+                    const factura = await responseFactura.json();
 
-            if (response.ok) {
-                const cliente = await response.json();
 
-                document.getElementById('client-name').value = `${cliente.nombre} ${cliente.apellido}`;
-                document.getElementById('client-cedula').value = cliente.cedula;
-                document.getElementById('phone').value = cliente.telefono || '';
-                document.getElementById('email').value = cliente.correo || '';
-                document.getElementById('address').value = cliente.direccion || '';
+                    document.getElementById('client-name').value = factura.cliente.nombre;
+                    document.getElementById('client-cedula').value = factura.cliente.dni;
+                    document.getElementById('email').value = factura.cliente.email || '';
+                    document.getElementById('address').value = factura.cliente.direccion || '';
+                    document.getElementById('phone').value = '';
 
-                showToast(`Datos de ${cliente.nombre} cargados correctamente`);
-            } else {
-                showToast('Cliente no encontrado en el sistema externo', 'error');
-                document.getElementById('client-name').value = '';
-                document.getElementById('client-cedula').value = '';
-                document.getElementById('phone').value = '';
-                document.getElementById('email').value = '';
+                    showToast(`Datos de Factura #${orderId} cargados correctamente`);
+                    return;
+                } else if (!cedula) {
+                    showToast('Factura no encontrada', 'error');
+                }
+            }
+
+            if (cedula) {
+                const responseCliente = await fetch(`${apiClientesExternosUrl}/${cedula}`);
+                if (responseCliente.ok) {
+                    const cliente = await responseCliente.json();
+
+                    document.getElementById('client-name').value = `${cliente.nombre} ${cliente.apellido}`;
+                    document.getElementById('client-cedula').value = cliente.cedula;
+                    document.getElementById('phone').value = cliente.telefono || '';
+                    document.getElementById('email').value = cliente.correo || '';
+                    document.getElementById('address').value = cliente.direccion || '';
+
+                    showToast(`Datos de cliente por cédula cargados correctamente`);
+                } else {
+                    showToast('No se encontró información ni por Factura ni por Cédula', 'error');
+                }
             }
         } catch (e) {
-            showToast('Error al conectar con el servidor', 'error');
+            showToast('Error al conectar con los servicios externos', 'error');
         } finally {
-            btnVerificarCliente.textContent = 'Verificar';
-            btnVerificarCliente.disabled = false;
+            btnVerificarMaestro.textContent = 'Verificar y Autocompletar';
+            btnVerificarMaestro.disabled = false;
         }
     };
 
-    if (btnVerificarCliente) {
-        btnVerificarCliente.onclick = verificarCliente;
+    if (btnVerificarMaestro) {
+        btnVerificarMaestro.onclick = verificarDatosMaestro;
     }
 
-    cedulaBuscarInput.onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            verificarCliente();
-        }
-    };
-
-    const sortDeliveries = (list) => {
-        return list.sort((a, b) => {
-            const priorityA = STATUS_MAP[a.status].priority;
-            const priorityB = STATUS_MAP[b.status].priority;
-            if (priorityA !== priorityB) return priorityA - priorityB;
-            return b.id - a.id;
-        });
-    };
-
-    const performSearch = () => {
-        const term = searchInput.value.trim().toLowerCase();
-        if (term === "") {
-            renderDeliveries(allDeliveries);
-            resetSearchBtn.style.display = 'none';
-            return;
-        }
-        const filtered = allDeliveries.filter(d =>
-            d.orderId?.toString().includes(term) ||
-            d.address?.toLowerCase().includes(term) ||
-            d.email?.toLowerCase().includes(term) ||
-            d.clientName?.toLowerCase().includes(term) ||
-            d.clientCedula?.toLowerCase().includes(term)
-        );
-        renderDeliveries(filtered);
-        resetSearchBtn.style.display = 'inline-block';
-    };
-
-    searchInput.oninput = performSearch;
 
     const fetchStats = async () => {
         try {
@@ -130,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(apiUrl);
             allDeliveries = await response.json();
             renderDeliveries(allDeliveries);
-        } catch (e) { showToast('Error de conexión', 'error'); }
+        } catch (e) { showToast('Error de conexión con el microservicio', 'error'); }
     };
 
     const saveDelivery = async (delivery) => {
@@ -152,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchStats();
             } else {
                 const errorData = await response.json();
-                showToast(errorData.message || 'Error al procesar', 'error');
+                showToast(errorData.message || 'Error al procesar la entrega', 'error');
             }
         } catch (e) { showToast('Error crítico de red', 'error'); }
     };
@@ -169,13 +155,20 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { showToast('Error al eliminar', 'error'); }
     };
 
+
     const renderDeliveries = (deliveries) => {
         deliveriesGrid.innerHTML = '';
-        const sorted = sortDeliveries([...deliveries]);
+        const sorted = [...deliveries].sort((a, b) => {
+            const priorityA = STATUS_MAP[a.status].priority;
+            const priorityB = STATUS_MAP[b.status].priority;
+            return (priorityA !== priorityB) ? priorityA - priorityB : b.id - a.id;
+        });
+
         if (sorted.length === 0) {
             deliveriesGrid.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">No hay entregas registradas.</p>';
             return;
         }
+
         sorted.forEach(d => {
             const config = STATUS_MAP[d.status];
             const card = document.createElement('div');
@@ -212,41 +205,30 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="drawer-info-box">
                 <p><strong>Orden:</strong> #${d.orderId}</p>
                 <p><strong>Cliente:</strong> ${d.clientName}</p>
-                <p><strong>Cédula:</strong> ${d.clientCedula}</p>
-                <p><strong>Contacto:</strong> ${d.phone}</p>
                 <p><strong>Destino:</strong> ${d.address}</p>
             </div>
             <div class="timeline">
-                <div class="timeline-item"><h4>Orden Registrada</h4><p>Datos validados por microservicio de clientes.</p></div>
-                <div class="timeline-item"><h4>Estado: ${d.status}</h4><p>Notificación enviada al cliente.</p></div>
+                <div class="timeline-item"><h4>Registro</h4><p>Datos validados e integrados con microservicios externos.</p></div>
+                <div class="timeline-item"><h4>Estado Actual: ${d.status}</h4><p>Notificación enviada al correo: ${d.email || 'N/A'}</p></div>
             </div>
         `;
         drawer.classList.remove('hidden');
         drawerBackdrop.classList.remove('hidden');
     };
 
-    document.querySelectorAll('.stat-card').forEach(card => {
-        card.onclick = () => {
-            const statusKey = card.id.split('-')[1].toUpperCase();
-            renderDeliveries(allDeliveries.filter(d => d.status === statusKey));
-            resetSearchBtn.style.display = 'inline-block';
-        };
-    });
-
     const openModalForEdit = (d) => {
         document.getElementById('modal-title').textContent = 'Editar Entrega';
         document.getElementById('delivery-id').value = d.id;
-        document.getElementById('order-id').value = d.orderId;
+        orderIdInput.value = d.orderId;
         document.getElementById('address').value = d.address;
         document.getElementById('email').value = d.email || '';
         document.getElementById('tracking-number').value = d.trackingNumber || '';
         document.getElementById('status').value = d.status;
-
         document.getElementById('client-name').value = d.clientName || '';
         document.getElementById('client-cedula').value = d.clientCedula || '';
         document.getElementById('phone').value = d.phone || '';
 
-        if (cedulaBuscarInput) cedulaBuscarInput.parentElement.parentElement.style.display = 'none';
+        btnVerificarMaestro.parentElement.style.display = 'none';
 
         modal.classList.remove('hidden');
         backdrop.classList.remove('hidden');
@@ -259,16 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
         drawerBackdrop.classList.add('hidden');
     };
 
+
     document.getElementById('add-delivery-btn').onclick = () => {
-        document.getElementById('modal-title').textContent = 'Agregar Entrega';
+        document.getElementById('modal-title').textContent = 'Agregar Nueva Entrega';
         deliveryForm.reset();
         document.getElementById('delivery-id').value = '';
-
-        if (cedulaBuscarInput) {
-            cedulaBuscarInput.parentElement.parentElement.style.display = 'block';
-            cedulaBuscarInput.value = '';
-        }
-
+        btnVerificarMaestro.parentElement.style.display = 'block';
         modal.classList.remove('hidden');
         backdrop.classList.remove('hidden');
     };
@@ -281,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     deliveryForm.onsubmit = (e) => {
         e.preventDefault();
         const data = {
-            orderId: parseInt(document.getElementById('order-id').value),
+            orderId: parseInt(orderIdInput.value),
             address: document.getElementById('address').value,
             email: document.getElementById('email').value,
             trackingNumber: document.getElementById('tracking-number').value,
@@ -295,11 +273,36 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDelivery(data);
     };
 
+    searchInput.oninput = () => {
+        const term = searchInput.value.trim().toLowerCase();
+        if (term === "") {
+            renderDeliveries(allDeliveries);
+            resetSearchBtn.style.display = 'none';
+            return;
+        }
+        const filtered = allDeliveries.filter(d =>
+            d.orderId?.toString().includes(term) ||
+            d.clientName?.toLowerCase().includes(term) ||
+            d.clientCedula?.toLowerCase().includes(term) ||
+            d.trackingNumber?.toLowerCase().includes(term)
+        );
+        renderDeliveries(filtered);
+        resetSearchBtn.style.display = 'inline-block';
+    };
+
     resetSearchBtn.onclick = () => {
         searchInput.value = '';
         renderDeliveries(allDeliveries);
         resetSearchBtn.style.display = 'none';
     };
+
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.onclick = () => {
+            const statusKey = card.id.split('-')[1].toUpperCase();
+            renderDeliveries(allDeliveries.filter(d => d.status === statusKey));
+            resetSearchBtn.style.display = 'inline-block';
+        };
+    });
 
     fetchDeliveries();
     fetchStats();

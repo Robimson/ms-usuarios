@@ -2,6 +2,7 @@ package ec.edu.uteq.microservicios.msusuarios.service.impl;
 
 import ec.edu.uteq.microservicios.msusuarios.model.Entrega;
 import ec.edu.uteq.microservicios.msusuarios.model.ClienteExternoDto;
+import ec.edu.uteq.microservicios.msusuarios.model.FacturaExternoDto;
 import ec.edu.uteq.microservicios.msusuarios.repository.EntregaRepository;
 import ec.edu.uteq.microservicios.msusuarios.service.EntregaService;
 import ec.edu.uteq.microservicios.msusuarios.service.EmailService;
@@ -53,6 +54,18 @@ public class EntregaServiceImpl implements EntregaService {
                 .filter(c -> c.getCedula() != null && c.getCedula().equals(cedula))
                 .findFirst()
                 .orElse(null);
+    }
+
+    @Override
+    public FacturaExternoDto buscarFacturaExternaPorId(Long id) {
+        String url = "http://74.249.40.210:8080/api/facturas/" + id;
+
+        try {
+            return restTemplate.getForObject(url, FacturaExternoDto.class);
+        } catch (Exception e) {
+            System.err.println("Error al conectar con el micro de facturación (ID: " + id + "): " + e.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -157,6 +170,8 @@ public class EntregaServiceImpl implements EntregaService {
         stats.put("CANCELADO", repo.countByStatus(Entrega.Estado.CANCELADO));
         return stats;
     }
+
+
 
     private void validarCambioEstado(Entrega.Estado actual, Entrega.Estado nuevo) {
         if (actual == nuevo) return;

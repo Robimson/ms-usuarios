@@ -7,6 +7,7 @@ import ec.edu.uteq.microservicios.msusuarios.api.model.EntregaUpdateRequest;
 import ec.edu.uteq.microservicios.msusuarios.mapper.EntregaMapper;
 import ec.edu.uteq.microservicios.msusuarios.model.Entrega;
 import ec.edu.uteq.microservicios.msusuarios.model.ClienteExternoDto;
+import ec.edu.uteq.microservicios.msusuarios.model.FacturaExternoDto;
 import ec.edu.uteq.microservicios.msusuarios.service.EntregaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -43,6 +44,18 @@ public class EntregaController implements EntregasApi {
             return ResponseEntity.ok(cliente);
         } else {
             return ResponseEntity.notFound().build(); // Devuelve 404 si no existe
+        }
+    }
+
+    @GetMapping("/api/facturas-externas/{id}")
+    public ResponseEntity<FacturaExternoDto> obtenerFacturaExternaPorId(@PathVariable Long id) {
+        FacturaExternoDto factura = service.buscarFacturaExternaPorId(id);
+
+        if (factura != null) {
+            return ResponseEntity.ok(factura);
+        } else {
+
+            return ResponseEntity.notFound().build();
         }
     }
 
